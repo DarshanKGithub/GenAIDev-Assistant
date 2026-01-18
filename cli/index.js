@@ -1,9 +1,21 @@
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Resolve backend/.env explicitly
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, "../backend/.env")
+});
+
 import readline from "readline";
 import { processRequest } from "../backend/processRequest.js";
 
 const rl = readline.createInterface({
   input: process.stdin,
-  output: process.stdout,
+  output: process.stdout
 });
 
 console.log("AI Developer Productivity Assistant (CLI)");

@@ -1,12 +1,10 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { processRequest } from "./processRequest.js";
 
 const app = express();
 
-/**
- * Allow ONLY Next.js frontend
- */
 app.use(
   cors({
     origin: "http://localhost:3000",

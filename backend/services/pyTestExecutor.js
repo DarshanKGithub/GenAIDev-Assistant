@@ -14,11 +14,7 @@ export function runPyTests(testCode) {
 
   return new Promise((resolve) => {
     exec("pytest pytests -q", (error, stdout, stderr) => {
-      if (error) {
-        resolve(stderr || stdout);
-      } else {
-        resolve(stdout);
-      }
+      resolve(error ? stderr || stdout : stdout);
     });
   });
 }
