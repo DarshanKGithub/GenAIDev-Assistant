@@ -1,18 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-
-// /* =======================
-//    MODES
-// ======================= */
-// const MODES = [
-//   { id: "explain", label: "Explain", hint: "Explain code or concept" },
-//   { id: "debug", label: "Debug", hint: "Find bugs & issues" },
-//   { id: "refactor", label: "Refactor", hint: "Improve code quality" }
-// ];
+import { useState, useRef, useEffect } from "react";
 
 /* =======================
-   CODE BLOCK COMPONENT
+   CODE BLOCK
 ======================= */
 function CodeBlock({ code }) {
   function copy() {
@@ -20,15 +11,15 @@ function CodeBlock({ code }) {
   }
 
   return (
-    <div className="relative bg-black/80 rounded-xl overflow-hidden text-sm">
+    <div className="relative bg-black/80 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden shadow-lg">
       <button
         onClick={copy}
-        className="absolute top-2 right-2 text-xs bg-white/10 px-2 py-1 rounded hover:bg-white/20"
+        className="absolute top-2 right-2 text-xs bg-white/10 px-2 py-1 rounded hover:bg-white/20 transition"
       >
         Copy
       </button>
 
-      <pre className="p-4 overflow-x-auto text-green-200">
+      <pre className="p-4 overflow-x-auto text-green-300 text-sm">
         <code>{code}</code>
       </pre>
     </div>
@@ -36,7 +27,7 @@ function CodeBlock({ code }) {
 }
 
 /* =======================
-   RESPONSE RENDERER
+   MESSAGE RENDERER
 ======================= */
 function RenderMessage({ content }) {
   const parts = content.split(/```/);
@@ -47,7 +38,10 @@ function RenderMessage({ content }) {
         i % 2 === 1 ? (
           <CodeBlock key={i} code={part} />
         ) : (
-          <p key={i} className="whitespace-pre-wrap leading-relaxed">
+          <p
+            key={i}
+            className="whitespace-pre-wrap leading-relaxed text-[15px] text-black"
+          >
             {part}
           </p>
         )
@@ -63,8 +57,6 @@ export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState("explain");
-
   const bottomRef = useRef(null);
 
   useEffect(() => {
@@ -73,8 +65,6 @@ export default function Home() {
 
   async function handleSubmit() {
     if (!prompt.trim() || loading) return;
-
-    const fullPrompt = `[MODE: ${mode.toUpperCase()}]\n${prompt}`;
 
     setMessages((prev) => [
       ...prev,
@@ -88,11 +78,11 @@ export default function Home() {
       const res = await fetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: fullPrompt })
+        body: JSON.stringify({ prompt })
       });
 
       const data = await res.json();
-      typeWriter(data.answer);
+      typeWriter(data.aiResponse || "No response.");
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -116,7 +106,7 @@ export default function Home() {
         clearInterval(interval);
         setLoading(false);
       }
-    }, 10);
+    }, 14);
   }
 
   function handleKey(e) {
@@ -127,133 +117,96 @@ export default function Home() {
   }
 
   return (
-    <main className="h-screen bg-[#0f0f0f] text-white flex">
-    {/* Sidebar */}
-<aside className="w-64 border-r border-white/10 p-5 hidden md:flex flex-col">
-  {/* Title */}
-  <h2 className="text-lg font-semibold mb-6">
-    AI Dev Assistant
-  </h2>
+    <main className="h-screen text-white flex flex-col relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] animate-gradient" />
+      <div className="absolute inset-0 -z-10 bg-black/60 backdrop-blur-3xl" />
 
-  {/* About */}
-  <div className="space-y-3 mb-6">
-    <h3 className="text-sm font-medium uppercase tracking-wide opacity-70">
-      About
-    </h3>
-    <p className="text-sm leading-relaxed opacity-60">
-      An AI-powered developer productivity tool that explains code,
-      performs dry-runs, generates test cases, and automates verification —
-      all running locally.
-    </p>
-  </div>
+      {/* Header */}
+      <header className="px-6 py-4 border-b border-white/10 text-sm font-medium tracking-wide">
+        AI Developer Assistant
+      </header>
 
-  {/* Tech Stack */}
-  <div className="space-y-3 mb-6">
-    <h3 className="text-sm font-medium uppercase tracking-wide opacity-70">
-      Tech Stack
-    </h3>
-    <ul className="text-sm space-y-1 opacity-60">
-      <li>• Next.js (UI)</li>
-      <li>• Node.js (Backend)</li>
-      <li>• Ollama (Local LLM)</li>
-      <li>• REST API Architecture</li>
-      <li>• CLI + Web Interface</li>
-    </ul>
-  </div>
-
-  {/* Model Info */}
-  <div className="space-y-3 mb-6">
-    <h3 className="text-sm font-medium uppercase tracking-wide opacity-70">
-      Model
-    </h3>
-    <p className="text-sm opacity-60">
-      LLaMA 3.1 (8B)<br />
-      Running locally via Ollama
-    </p>
-  </div>
-
-  {/* Footer */}
-  <div className="mt-auto text-xs opacity-40 leading-relaxed">
-    Private • Offline • No API Keys<br />
-    Designed for learning & interviews
-  </div>
-</aside>
-
-
-      {/* Main */}
-      <section className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="px-6 py-4 border-b border-white/10">
-          <div className="text-sm opacity-70">
-            Mode: <span className="font-medium">{mode}</span>
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-10 space-y-10">
+        {messages.length === 0 && (
+          <div className="max-w-xl text-white/60">
+            <h2 className="text-xl font-semibold mb-3 text-white">
+              Welcome 👋
+            </h2>
+            <p className="mb-4">
+              Ask anything related to development, debugging, or system design.
+            </p>
+            <ul className="list-disc ml-4 space-y-2 text-sm">
+              <li>Explain closures in JavaScript</li>
+              <li>Generate unit tests for this function</li>
+              <li>Refactor this React component</li>
+            </ul>
           </div>
-        </header>
+        )}
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
-          {messages.length === 0 && (
-            <div className="opacity-40 max-w-xl">
-              <p className="mb-2">Try asking:</p>
-              <ul className="list-disc ml-4 space-y-1">
-                <li>Explain this React hook</li>
-                <li>Debug this API error</li>
-                <li>Refactor this function</li>
-              </ul>
-            </div>
-          )}
-
-          {messages.map((m, i) => (
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            className={`flex ${
+              m.role === "user" ? "justify-end" : "justify-start"
+            }`}
+          >
             <div
-              key={i}
-              className={`max-w-3xl ${
-                m.role === "user"
-                  ? "ml-auto text-right"
-                  : "mr-auto"
-              }`}
+              className={`max-w-3xl px-6 py-5 rounded-2xl text-sm leading-relaxed shadow-xl transition-all
+                ${
+                  m.role === "user"
+                    ? "bg-white text-black rounded-br-md"
+                    : "bg-white backdrop-blur-xl border border-white/10 rounded-bl-md"
+                }`}
             >
-              <div
-                className={`px-4 py-4 rounded-xl text-sm leading-relaxed
-                  ${
-                    m.role === "user"
-                      ? "bg-white text-black"
-                      : "bg-white/10"
-                  }`}
-              >
-                <RenderMessage content={m.content} />
-              </div>
+              <RenderMessage content={m.content} />
             </div>
-          ))}
-
-          {loading && (
-            <div className="text-sm opacity-50">
-              AI is thinking…
-            </div>
-          )}
-
-          <div ref={bottomRef} />
-        </div>
-
-        {/* Input */}
-        <footer className="border-t border-white/10 p-4">
-          <div className="relative max-w-4xl mx-auto">
-            <textarea
-              rows={2}
-              placeholder={`/${mode} Ask something…`}
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              onKeyDown={handleKey}
-              className="w-full bg-white/10 rounded-xl p-4 pr-24 resize-none focus:outline-none focus:ring-1 focus:ring-white/20"
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="absolute right-3 bottom-3 bg-white text-black px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 disabled:opacity-40"
-            >
-              Run
-            </button>
           </div>
-        </footer>
-      </section>
+        ))}
+
+        {loading && (
+          <div className="text-sm opacity-50 animate-pulse">
+            AI is thinking…
+          </div>
+        )}
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Input */}
+      <footer className="border-t border-white/10 p-5">
+        <div className="relative max-w-4xl mx-auto">
+          <textarea
+            rows={2}
+            placeholder="Ask something… (Enter to send, Shift+Enter for new line)"
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={handleKey}
+            className="w-full bg-white/10 backdrop-blur-xl rounded-xl p-4 pr-28 resize-none focus:outline-none focus:ring-2 focus:ring-white/20 transition"
+          />
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="absolute right-3 bottom-3 bg-white text-black px-5 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200 active:scale-95 disabled:opacity-40 transition"
+          >
+            Send →
+          </button>
+        </div>
+      </footer>
+
+      {/* Gradient animation */}
+      <style jsx>{`
+        @keyframes gradient {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient {
+          background-size: 400% 400%;
+          animation: gradient 20s ease infinite;
+        }
+      `}</style>
     </main>
   );
 }
